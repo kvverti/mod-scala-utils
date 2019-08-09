@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "fluid-test",
+  "id": "mod-scala-util",
   "version": "${version}",
 
   "name": "Example Mod",
@@ -13,17 +13,16 @@
     "sources": "https://github.com/FabricMC/fabric-example-mod"
   },
 
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/fluid-test/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "io.github.kvverti.fluid.test.FluidTest"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
   ],
 
   "depends": {
