@@ -2,32 +2,25 @@
   "schemaVersion": 1,
   "id": "mod-scala-util",
   "version": "${version}",
-
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Scala Utilities",
+  "description": "Utilities for scala mods",
   "authors": [
-    "Me!"
+    "kwerti",
+    "RoboSky"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/kvverti/mod-scala-utils",
+    "sources": "https://github.com/kvverti/mod-scala-utils"
   },
-
   "license": "MIT",
-  "icon": "assets/fluid-test/icon.png",
-
+  "icon": "assets/mod-scala-util/icon.png",
   "environment": "*",
-  "entrypoints": {
-    "main": [
-      "io.github.kvverti.fluid.test.FluidTest"
-    ]
-  },
-  "mixins": [
-  ],
-
   "depends": {
     "fabricloader": ">=0.4.0",
-    "fabric": "*"
+    "fabric-language-scala": "*"
+  },
+  "custom": {
+    "modmenu:api": true
   },
   "suggests": {
     "flamingo": "*"
