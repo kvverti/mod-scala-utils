@@ -11,7 +11,7 @@ import scala.collection.parallel.immutable.ParIterable
 
 object JavaStreams {
 
-  class StreamBridge[A](val src: BaseStream[A, _ <: BaseStream[A, _]]) extends ParIterable[A] {
+  class StreamBridge[A](val src: BaseStream[A, _]) extends ParIterable[A] {
 
     private class Splitting(val self: Spliterator[A]) extends IterableSplitter[A] {
       var n: A = _
@@ -44,7 +44,7 @@ object JavaStreams {
   }
 
   implicit class ObjStreamBridge[A](val self: ObjStream[A]) extends AnyVal {
-    def asScala: ParIterable[A] = new StreamBridge[A](self)
+    def asScala: ParIterable[A] = new StreamBridge(self)
   }
 
   implicit class IntStreamBridge(val self: IntStream) extends AnyVal {
