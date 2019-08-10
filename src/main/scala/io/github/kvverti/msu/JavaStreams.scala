@@ -13,6 +13,22 @@ object JavaStreams {
     def foreach(f: A => Unit): Unit = self forEach { f(_) }
   }
 
+  implicit class OptionalBridge[A](val self: util.Optional[A]) extends AnyVal {
+    def withFilter(p: A => Boolean): OptionalBridgeWithFilter[A] =
+      new OptionalBridgeWithFilter(self, p)
+    def foreach(f: A => Unit): Unit = self ifPresent { f(_) }
+    def toOption: Option[A] = if (self.isPresent) Some(self.get) else None
+  }
+
+  class OptionalBridgeWithFilter[A](self: util.Optional[A], p: A => Boolean) {
+    def flatMap[B, B1 <: B](f: A => util.Optional[B1]): util.Optional[B] =
+      self filter { p(_) } flatMap { f(_) }
+    def map[B](f: A => B): util.Optional[B] = self filter { p(_) } map { f(_) }
+    def withFilter(q: A => Boolean): OptionalBridgeWithFilter[A] =
+      new OptionalBridgeWithFilter(self, a => p(a) && q(a))
+    def foreach(f: A => Unit): Unit = self filter { p(_) } ifPresent { f(_) }
+  }
+
   // Java Collectors are invariant and have overall bad typing
 
   def toScalaVector[A]: Collector[A, _, Vector[A]] = ScalaVectorCollector.asInstanceOf[Collector[A, _, Vector[A]]]
