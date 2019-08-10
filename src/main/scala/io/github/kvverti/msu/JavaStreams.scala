@@ -65,11 +65,13 @@ object JavaStreams {
 
     def foreach(f: A => Unit): Unit = self.ifPresent(f(_))
 
+    def ofType[A1 >: A]: util.Optional[A1] = self.asInstanceOf[util.Optional[A1]]
+
     def toOption: Option[A] = if (self.isPresent) Some(self.get) else None
   }
 
   class OptionalBridgeWithFilter[A](self: util.Optional[A], p: A => Boolean) {
-    def flatMap[B, B1 <: B](f: A => util.Optional[B1]): util.Optional[B] =
+    def flatMap[B](f: A => util.Optional[B]): util.Optional[B] =
       self.filter(p(_)).flatMap(f(_))
 
     def map[B](f: A => B): util.Optional[B] = self.filter(p(_)).map(f(_))
