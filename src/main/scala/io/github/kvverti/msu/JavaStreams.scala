@@ -14,7 +14,6 @@ object JavaStreams {
   class StreamBridge[A](val src: BaseStream[A, _ <: BaseStream[A, _]]) extends ParIterable[A] {
 
     private class Splitting(val self: Spliterator[A]) extends IterableSplitter[A] {
-      sp =>
       var n: A = _
 
       override def split: Seq[IterableSplitter[A]] = self.trySplit() match {
