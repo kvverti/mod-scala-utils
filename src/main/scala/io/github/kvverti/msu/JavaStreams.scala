@@ -1,64 +1,97 @@
 package io.github.kvverti.msu
 
 import java.util
-import java.util.function.{BiConsumer, BinaryOperator, Function, Supplier}
-import java.util.stream.{Collector, Stream => ObjStream}
+import java.util.Spliterator
+import java.util.stream.{BaseStream, DoubleStream, IntStream, LongStream, Stream => ObjStream}
 
-import scala.collection.mutable
+import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.collection.parallel.IterableSplitter
+import scala.collection.parallel.immutable.ParIterable
 
 object JavaStreams {
 
+  class StreamBridge[A](val src: BaseStream[A, _ <: BaseStream[A, _]]) extends ParIterable[A] {
+
+    private class Splitting(val self: Spliterator[A]) extends IterableSplitter[A] {
+      sp =>
+      var n: A = _
+
+      override def split: Seq[IterableSplitter[A]] = self.trySplit() match {
+        case null => Seq(this)
+        case other => Seq(this, new Splitting(other))
+      }
+
+      override def dup: IterableSplitter[A] = splitter
+
+      override def remaining: Int = {
+        val int = self.estimateSize().toInt
+        if (int < 0) while (true) {}
+        int
+      }
+
+      override def hasNext: Boolean = self.tryAdvance(a => n = a)
+
+      override def next(): A = n
+    }
+
+    override def seq: immutable.Iterable[A] = new immutable.Iterable[A] {
+      override def iterator: Iterator[A] = src.iterator().asScala
+    }
+
+    def splitter: IterableSplitter[A] = new Splitting(src.spliterator())
+
+    override def size: Int = src.spliterator().getExactSizeIfKnown.toInt
+  }
+
   implicit class ObjStreamBridge[A](val self: ObjStream[A]) extends AnyVal {
-    def withFilter(f: A => Boolean): ObjStream[A] = self filter { f(_) }
-    def foreach(f: A => Unit): Unit = self forEach { f(_) }
+    def asScala: ParIterable[A] = new StreamBridge[A](self)
+  }
+
+  implicit class IntStreamBridge(val self: IntStream) extends AnyVal {
+    def asScala: ParIterable[Int] = new StreamBridge(self).map(Int.unbox)
+  }
+
+  implicit class LongStreamBridge(val self: LongStream) extends AnyVal {
+    def asScala: ParIterable[Long] = new StreamBridge(self).map(Long.unbox)
+  }
+
+  implicit class DoubleStreamBridge(val self: DoubleStream) extends AnyVal {
+    def asScala: ParIterable[Double] = new StreamBridge(self).map(Double.unbox)
   }
 
   implicit class OptionalBridge[A](val self: util.Optional[A]) extends AnyVal {
     def withFilter(p: A => Boolean): OptionalBridgeWithFilter[A] =
       new OptionalBridgeWithFilter(self, p)
-    def foreach(f: A => Unit): Unit = self ifPresent { f(_) }
+
+    def foreach(f: A => Unit): Unit = self ifPresent {
+      f(_)
+    }
+
     def toOption: Option[A] = if (self.isPresent) Some(self.get) else None
   }
 
   class OptionalBridgeWithFilter[A](self: util.Optional[A], p: A => Boolean) {
     def flatMap[B, B1 <: B](f: A => util.Optional[B1]): util.Optional[B] =
-      self filter { p(_) } flatMap { f(_) }
-    def map[B](f: A => B): util.Optional[B] = self filter { p(_) } map { f(_) }
+      self filter {
+        p(_)
+      } flatMap {
+        f(_)
+      }
+
+    def map[B](f: A => B): util.Optional[B] = self filter {
+      p(_)
+    } map {
+      f(_)
+    }
+
     def withFilter(q: A => Boolean): OptionalBridgeWithFilter[A] =
       new OptionalBridgeWithFilter(self, a => p(a) && q(a))
-    def foreach(f: A => Unit): Unit = self filter { p(_) } ifPresent { f(_) }
-  }
 
-  // Java Collectors are invariant and have overall bad typing
-
-  def toScalaVector[A]: Collector[A, _, Vector[A]] = ScalaVectorCollector.asInstanceOf[Collector[A, _, Vector[A]]]
-
-  def toScalaList[A]: Collector[A, _, List[A]] = ScalaListCollector.asInstanceOf[Collector[A, _, List[A]]]
-
-  def toScalaSet[A]: Collector[A, _, Set[A]] = ScalaSetCollector.asInstanceOf[Collector[A, _, Set[A]]]
-
-  def toScalaSeq[A]: Collector[A, _, Seq[A]] = ScalaSeqCollector.asInstanceOf[Collector[A, _, Seq[A]]]
-
-  private abstract class ScalaCollector[C] extends Collector[Any, mutable.ArrayBuffer[Any], C] {
-    override def characteristics: util.Set[Collector.Characteristics] = util.Collections.emptySet[Collector.Characteristics]
-    override def supplier: Supplier[mutable.ArrayBuffer[Any]] = () => new mutable.ArrayBuffer()
-    override def accumulator: BiConsumer[mutable.ArrayBuffer[Any], Any] = _ += _
-    override def combiner: BinaryOperator[mutable.ArrayBuffer[Any]] = _ ++ _
-  }
-
-  private object ScalaVectorCollector extends ScalaCollector[Vector[Any]] {
-    override def finisher: Function[mutable.ArrayBuffer[Any], Vector[Any]] = _.toVector
-  }
-
-  private object ScalaListCollector extends ScalaCollector[List[Any]] {
-    override def finisher: Function[mutable.ArrayBuffer[Any], List[Any]] = _.toList
-  }
-
-  private object ScalaSetCollector extends ScalaCollector[Set[Any]] {
-    override def finisher: Function[mutable.ArrayBuffer[Any], Set[Any]] = _.toSet
-  }
-
-  private object ScalaSeqCollector extends ScalaCollector[Seq[Any]] {
-    override def finisher: Function[mutable.ArrayBuffer[Any], Seq[Any]] = _.toSeq
+    def foreach(f: A => Unit): Unit = self filter {
+      p(_)
+    } ifPresent {
+      f(_)
+    }
   }
 }
