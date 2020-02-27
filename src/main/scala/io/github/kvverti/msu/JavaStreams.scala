@@ -1,16 +1,13 @@
 package io.github.kvverti.msu
 
 import java.util
-import java.util.Spliterator
-import java.util.stream.{BaseStream, DoubleStream, IntStream, LongStream, Stream => ObjStream}
+import java.util.stream.{Stream => ObjStream}
 import java.util.stream.Collectors.joining
 
 import scala.collection.TraversableOnce
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.collection.mutable
-import scala.collection.parallel.IterableSplitter
-import scala.collection.parallel.immutable.ParIterable
 
 object JavaStreams {
 
